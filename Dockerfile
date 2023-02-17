@@ -1,4 +1,5 @@
-FROM nvidia/cuda:12.0.0-runtime-ubuntu22.04
+# FROM nvidia/cuda:12.0.0-runtime-ubuntu22.04
+FROM nvidia/cuda:11.6.2-devel-ubuntu20.04
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y wget git && apt-get clean
