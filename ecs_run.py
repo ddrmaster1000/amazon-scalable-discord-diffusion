@@ -1,6 +1,6 @@
-from nataili.model_manager import ModelManager
-from nataili.inference.compvis.txt2img import txt2img
-from nataili.util.cache import torch_gc
+from nataili.model_manager.compvis import CompVisModelManager
+from nataili.stable_diffusion.compvis import CompVis
+from nataili.util.logger import logger
 import os
 from PIL import Image
 
@@ -10,15 +10,15 @@ import json
 import requests
 import random
 
-REGION = os.environ['REGION']
-ssm = boto3.client('ssm', region_name=REGION)
-USER_HG =  ssm.get_parameter(Name='/USER_HG')['Parameter']['Value']
-PASSWORD_HG = ssm.get_parameter(Name='/PASSWORD_HG', WithDecryption=True)['Parameter']['Value']
+# REGION = os.environ['REGION']
+# ssm = boto3.client('ssm', region_name=REGION)
+# USER_HG =  ssm.get_parameter(Name='/USER_HG')['Parameter']['Value']
+# PASSWORD_HG = ssm.get_parameter(Name='/PASSWORD_HG', WithDecryption=True)['Parameter']['Value']
 
-# Create SQS client
-SQS = boto3.client('sqs', region_name=REGION)
+# # Create SQS client
+# SQS = boto3.client('sqs', region_name=REGION)
 
-QUEUE_URL = os.environ['SQSQUEUEURL']
+# QUEUE_URL = os.environ['SQSQUEUEURL']
 WAIT_TIME_SECONDS = 20
 
 ### SQS Functions ###
@@ -136,7 +136,7 @@ def image_grid(imgs, rows, cols):
     w, h = imgs[0].size
     grid = Image.new('RGB', size=(cols*w, rows*h))
     grid_w, grid_h = grid.size
-    
+
     for i, img in enumerate(imgs):
         grid.paste(img, box=(i%cols*w, i//cols*h))
     return grid
@@ -153,7 +153,7 @@ def runStableDiffusion(model_manager, model, user_inputs):
 
 def saveImage(image_list):
     my_grid = image_grid(image_list, 2, 2)
-    my_grid.save('tmp.png', format="Png")   
+    my_grid.save('tmp.png', format="Png")
     return 'tmp.png'
 
 def decideInputs(user_dict):
@@ -169,54 +169,60 @@ def decideInputs(user_dict):
 
 def runMain():
     # The model manager loads and unloads the  SD models and has features to download them or find their location
-    model_manager = ModelManager(hf_auth={'username': USER_HG, 'password': PASSWORD_HG})
-    model_manager.init()
-
-    # The model to use for the generation. 
+    mm = CompVisModelManager()
+    # The model to use for the generation.
     model = "stable_diffusion"
-    success = model_manager.load_model(model)
-    # Load model or download model using hugging face credentials
-    if success:
-        print(f'{model} loaded')
-    else:
-        download_s = model_manager.download_model(model)
-        if download_s:
-            print(f'{model} downloaded')
-            model_manager.load_model(model)
-        else:
-            print(f'{model} download error')
-            print(f'{model} load error')
+    mm.load(model)
 
-    queue_long_poll = WAIT_TIME_SECONDS
-    # Get Message from Queue
-    while True:
-        print("Waiting for next message from Queue...")
-        message, receipt_handle = getSQSMessage(QUEUE_URL, WAIT_TIME_SECONDS)
 
-        if not message:
-            ## Wait for new message or timeout and exit
-            while not message:
-                message, receipt_handle = getSQSMessage(QUEUE_URL, queue_long_poll)
-                if message:
-                    break
+    compvis = CompVis(
+        model=mm.loaded_models[model],
+        model_name=model,
+        output_dir="output_dir",
+        disable_voodoo=True,
+        filter_nsfw=False,
+        safety_checker=None,
+    )
+    compvis.generate(
+        prompt="a large cubism cake",
+        sampler_name="k_euler_a",
+        ddim_steps=15,
+        seed=2,
+        init_img=None,
+        sigma_override=None,
+        clip_skip=1
+    )
 
-        ## Run stable Diffusion
-        print("Found a message! Running Stable Diffusion")
-        message_dict = convertMessageToDict(message)
-        message_dict = decideInputs(message_dict)
-        message_response = messageResponse(message_dict)
-        print(message_response)
-        submitInitialResponse(message_dict['applicationId'], message_dict['interactionToken'], message_response)
-        # file_path, user_seed, user_steps = runStableDiffusion(opt, message_dict, model, device, outpath, sampler)
-        image_list = runStableDiffusion(model_manager, model, message_dict)
-        file_path = saveImage(image_list)
-        picturesToDiscord(file_path, message_dict, message_response)
-        cleanupPictures(file_path)
-        ## Delete Message
-        deleteSQSMessage(QUEUE_URL, receipt_handle, message_dict['prompt'])
+    # queue_long_poll = WAIT_TIME_SECONDS
+    # # Get Message from Queue
+    # while True:
+    #     print("Waiting for next message from Queue...")
+    #     message, receipt_handle = getSQSMessage(QUEUE_URL, WAIT_TIME_SECONDS)
 
-    image_list = runStableDiffusion(model_manager, model)
-    my_image = saveImage(image_list)
+    #     if not message:
+    #         ## Wait for new message or timeout and exit
+    #         while not message:
+    #             message, receipt_handle = getSQSMessage(QUEUE_URL, queue_long_poll)
+    #             if message:
+    #                 break
+
+    #     ## Run stable Diffusion
+    #     print("Found a message! Running Stable Diffusion")
+    #     message_dict = convertMessageToDict(message)
+    #     message_dict = decideInputs(message_dict)
+    #     message_response = messageResponse(message_dict)
+    #     print(message_response)
+    #     submitInitialResponse(message_dict['applicationId'], message_dict['interactionToken'], message_response)
+    #     # file_path, user_seed, user_steps = runStableDiffusion(opt, message_dict, model, device, outpath, sampler)
+    #     image_list = runStableDiffusion(model_manager, model, message_dict)
+    #     file_path = saveImage(image_list)
+    #     picturesToDiscord(file_path, message_dict, message_response)
+    #     cleanupPictures(file_path)
+    #     ## Delete Message
+    #     deleteSQSMessage(QUEUE_URL, receipt_handle, message_dict['prompt'])
+
+    # image_list = runStableDiffusion(model_manager, model)
+    # my_image = saveImage(image_list)
 
 
 

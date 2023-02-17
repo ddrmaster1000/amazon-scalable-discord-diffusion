@@ -5,11 +5,11 @@ channels:
   - nvidia/label/cuda-11.7.0
 dependencies:
   - cuda-toolkit
-  - python=3.8.5
   - pip=20.3
+  - python=3.8.5
   - pytorch=1.13.1
   - pytorch-cuda
-  - scikit-image
   - torchvision
+  - requests
   - pip:
     - -r file:requirements.txt
