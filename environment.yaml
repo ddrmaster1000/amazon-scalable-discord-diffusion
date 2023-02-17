@@ -1,6 +1,15 @@
 name: discord-diffusion
+channels:
+  - pytorch
+  - defaults
+  - nvidia/label/cuda-11.7.0
 dependencies:
+  - cuda-toolkit
   - python=3.8.5
   - pip=20.3
+  - pytorch=1.13.1
+  - pytorch-cuda
+  - scikit-image
+  - torchvision
   - pip:
     - -r file:requirements.txt
