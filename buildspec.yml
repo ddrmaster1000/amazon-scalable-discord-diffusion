@@ -1,5 +1,9 @@
 version: 0.2
 
+env:
+  parameter-store:
+    DOCKER_PASSWORD: /CodeBuild/dockerLoginPassword
+
 phases:
   pre_build:
     commands:
@@ -8,6 +12,8 @@ phases:
   build:
     commands:
       - echo Build started on `date`
+      - echo Login to Docker...
+      - docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
       - echo Building the Docker image...
       - docker build -t $IMAGE_REPO_NAME:$IMAGE_TAG .
       - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_TAG
