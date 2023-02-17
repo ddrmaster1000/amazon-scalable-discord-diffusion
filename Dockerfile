@@ -14,7 +14,7 @@ RUN bash Miniconda3-latest-Linux-x86_64.sh -b -p /miniconda
 ENV PATH=/miniconda/bin:$PATH
 
 COPY environment.yaml /app/
-
+COPY requirements.txt /app/
 # Update conda and install any necessary packages
 RUN conda update --name base --channel defaults conda && \
     conda env create -f /app/environment.yaml --force && \
