@@ -29,6 +29,7 @@
 # ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "discord-diffusion", "python", "ecs_run.py"]
 
 
+
 FROM golang:1.12-alpine AS build
 #Install git
 RUN apk add --no-cache git
