@@ -17,7 +17,7 @@ COPY environment.yaml /app/
 COPY requirements.txt /app/
 # Update conda and install any necessary packages
 RUN conda update --name base --channel defaults conda && \
-    conda env create -f /app/environment.yaml --force && \
+    conda env create -f /app/environment.yaml --force -q && \
     conda clean -a -y
 
 # Install conda environment into container so we do not need to install every time.
