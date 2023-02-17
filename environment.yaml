@@ -1,0 +1,6 @@
+name: discord-diffusion
+dependencies:
+  - python=3.8.5
+  - pip=20.3
+  - pip:
+    - -r file:requirements.txt
