@@ -19,6 +19,7 @@ def runMain():
         # filter_nsfw=False,
         # safety_checker=None,
     )
+    
     compvis.generate(
         prompt="a large cubism cake",
         sampler_name="k_euler_a",
