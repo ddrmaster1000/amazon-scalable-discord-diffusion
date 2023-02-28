@@ -1,15 +1,18 @@
 name: discord-diffusion
 channels:
-  - pytorch
+  - nvidia
+  - conda-forge
   - defaults
-  - nvidia/label/cuda-11.7.0
 dependencies:
-  - cuda-toolkit
-  - pip=20.3
-  - python=3.8.5
-  - pytorch=1.13.1
-  - pytorch-cuda
-  - torchvision
-  - requests
+  - cudatoolkit==11.7.0
+  - git
+  - pip
+  - python==3.10
   - pip:
-    - -r file:requirements.txt
+    - nataili == 0.2.9009
+    - xformers
+    - triton
+    - boto3
+    - random
+    - json
+    - requests

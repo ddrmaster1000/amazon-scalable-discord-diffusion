@@ -2,7 +2,7 @@ version: 0.2
 
 env:
   parameter-store:
-    DOCKER_PASSWORD: /CodeBuild/dockerLoginPassword
+    DOCKER_PASSWORD: /discord_diffusion/dockerLoginPassword
 
 phases:
   pre_build:

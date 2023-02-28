@@ -1,10 +1,7 @@
 FROM nvidia/cuda:12.0.0-runtime-ubuntu22.04
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y wget git && apt-get clean
-
-RUN git clone https://github.com/hlky/nataili.git .
-# Check out a specific version of the above repository
+RUN apt-get update && apt-get install -y wget git libgl1 libglib2.0-0 libsm6 libxrender1 libxext6 && apt-get clean
 
 # Download and install Miniconda
 RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
@@ -14,7 +11,7 @@ RUN bash Miniconda3-latest-Linux-x86_64.sh -b -p /miniconda
 ENV PATH=/miniconda/bin:$PATH
 
 COPY environment.yaml /app/
-COPY requirements.txt /app/
+
 # Update conda and install any necessary packages
 RUN conda update --name base --channel defaults conda && \
     conda env create -f /app/environment.yaml --force -q && \
@@ -24,8 +21,6 @@ RUN conda update --name base --channel defaults conda && \
 ENV ENV_NAME discord-diffusion
 
 COPY ecs_run.py /app/
-# RUN conda activate discord-diffusion && \
-#     pip3 install -e .
 
 SHELL ["conda", "run", "-n", "discord-diffusion", "/bin/bash", "-c"]
 
