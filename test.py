@@ -7,7 +7,6 @@ from PIL import Image
 def runMain():
     # The model manager loads and unloads the  SD models and has features to download them or find their location
     mm = CompVisModelManager()
-    
     # The model to use for the generation.
     model = "stable_diffusion"
     mm.load(model)
@@ -20,7 +19,7 @@ def runMain():
         # filter_nsfw=False,
         # safety_checker=None,
     )
-
+    
     compvis.generate(
         prompt="a large cubism cake",
         sampler_name="k_euler_a",
