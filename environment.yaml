@@ -13,5 +13,4 @@ dependencies:
     - xformers
     - triton
     - boto3
-    - json
     - requests
