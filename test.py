@@ -10,7 +10,6 @@ def runMain():
     # The model to use for the generation.
     model = "stable_diffusion"
     mm.load(model)
-
     compvis = CompVis(
         model=mm.loaded_models[model],
         model_name=model,
