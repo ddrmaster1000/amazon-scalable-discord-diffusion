@@ -11,7 +11,7 @@ import requests
 import random
 
 TEST = False
-REGION = boto3.session.Session().region_name
+REGION = requests.get('http://169.254.169.254/latest/meta-data/placement/region').content.decode("utf-8") 
 ssm = boto3.client('ssm', region_name=REGION)
 
 # Create SQS client
