@@ -10,6 +10,7 @@ dependencies:
   - python==3.10
   - pip:
     # - nataili == 0.2.9009
+    - git+https://github.com/ddrmaster1000/nataili.git
     - xformers
     - triton
     - boto3

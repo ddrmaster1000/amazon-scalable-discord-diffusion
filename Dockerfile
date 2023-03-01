@@ -4,8 +4,8 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y wget git libgl1 libglib2.0-0 libsm6 libxrender1 libxext6 && apt-get clean
 
 # Download nataili for now
-RUN git clone https://github.com/ddrmaster1000/nataili.git .
-RUN git checkout dc16230de4155cc6ba866a5b08a7c155968361cd
+# RUN git clone https://github.com/ddrmaster1000/nataili.git .
+# RUN git checkout dc16230de4155cc6ba866a5b08a7c155968361cd
 
 # Download and install Miniconda
 RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
@@ -21,7 +21,7 @@ RUN conda update --name base --channel defaults conda && \
     conda env create -f /app/environment.yaml --force -q && \
     conda clean -a -y
 
-RUN /miniconda/envs/discord-diffusion/bin/pip -e .
+# RUN /miniconda/envs/discord-diffusion/bin/pip -e .
 # Install conda environment into container so we do not need to install every time.
 ENV ENV_NAME discord-diffusion
 
