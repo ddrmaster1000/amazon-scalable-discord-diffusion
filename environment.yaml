@@ -9,7 +9,7 @@ dependencies:
   - pip
   - python==3.10
   - pip:
-    - nataili == 0.2.9009
+    # - nataili == 0.2.9009
     - xformers
     - triton
     - boto3
