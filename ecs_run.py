@@ -163,24 +163,26 @@ def saveImage(image_list):
     return 'tmp.png'
 
 def decideInputs(user_dict):
-    if 'seed' not in user_dict:
-        user_dict['seed'] = random.randint(0,99999)
+    default_dict = {
+        'seed': random.randint(0,99999),
+        'steps': 16,
+        'negative_prompt': "",
+        'sampler': "k_euler_a",
+        'model': "stable_diffusion_2.1_512"
+    }
 
-    if 'steps' not in user_dict:
-        user_dict['steps'] = 16
-
-    if 'negative_prompt' not in user_dict:
-        user_dict['negative_prompt'] = ""
-
-    if 'sampler' not in user_dict:
-        user_dict['sampler'] = 'k_euler_a'
+    for internal_var, default in default_dict.items():
+        if internal_var not in user_dict:
+            user_dict[internal_var] = default
     return user_dict
 
 def runMain():
     mm = CompVisModelManager()
     # The model to use for the generation.
-    model = "stable_diffusion_2.1_512"
-    mm.load(model)
+    base_model = "stable_diffusion_2.1_512"
+    mm.load(base_model)
+    prev_loaded_models = []
+    prev_loaded_models.append(base_model)
 
     if TEST:
         message_dict = {
@@ -204,14 +206,6 @@ def runMain():
                     break
 
         ## Run stable Diffusion
-        compvis = CompVis(
-            model=mm.loaded_models[model],
-            model_name=model,
-            output_dir="output_dir",
-            disable_voodoo=True,
-            filter_nsfw=False,
-            safety_checker=None,
-        )
         print("Found a message! Running Stable Diffusion")
         message_dict = convertMessageToDict(message)
         message_dict = decideInputs(message_dict)
@@ -219,6 +213,19 @@ def runMain():
         print(message_response)
         submitInitialResponse(message_dict['applicationId'], message_dict['interactionToken'], message_response)
 
+        # Determine if we need to load a new model
+        if message_dict['model'] not in prev_loaded_models:
+            mm.load(message_dict['model'])
+            prev_loaded_models.append(message_dict['model'])
+            
+        compvis = CompVis(
+            model=mm.loaded_models[message_dict['model']],
+            model_name=message_dict['model'],
+            output_dir="output_dir",
+            disable_voodoo=True,
+            filter_nsfw=False,
+            safety_checker=None,
+        )
         image_list = runStableDiffusion(compvis, message_dict)
         file_path = saveImage(image_list)
         picturesToDiscord(file_path, message_dict, message_response)
