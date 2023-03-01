@@ -21,7 +21,7 @@ RUN conda update --name base --channel defaults conda && \
     conda env create -f /app/environment.yaml --force -q && \
     conda clean -a -y
 
-RUN /miniconda/env/discord-diffusion/bin/python -m pip -e .
+RUN /miniconda/envs/discord-diffusion/bin/python -m pip -e .
 # Install conda environment into container so we do not need to install every time.
 ENV ENV_NAME discord-diffusion
 
