@@ -102,7 +102,7 @@ def messageResponse(customer_data):
     message_response = ''
     readable_dict = {
         'prompt': 'Prompt',
-        'neg_prompt': 'Negative Prompt',
+        'negative_prompt': 'Negative Prompt',
         'seed': 'Seed',
         'steps': 'Steps',
         'sampler': 'Sampler'
@@ -148,7 +148,7 @@ def runStableDiffusion(compvis, user_inputs):
     image_list = []
     for my_seed in range(int(user_inputs['seed']),int(user_inputs['seed']) + 4):
         compvis.generate(
-            prompt=f"{user_inputs['prompt']} ### {user_inputs['neg_prompt']}",
+            prompt=f"{user_inputs['prompt']} ### {user_inputs['negative_prompt']}",
             sampler_name=user_inputs['sampler'],
             ddim_steps=int(user_inputs['steps']),
             seed=my_seed,
@@ -169,8 +169,8 @@ def decideInputs(user_dict):
     if 'steps' not in user_dict:
         user_dict['steps'] = 16
 
-    if 'neg_prompt' not in user_dict:
-        user_dict['neg_prompt'] = ""
+    if 'negative_prompt' not in user_dict:
+        user_dict['negative_prompt'] = ""
 
     if 'sampler' not in user_dict:
         user_dict['sampler'] = 'k_euler_a'
