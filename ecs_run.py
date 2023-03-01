@@ -182,14 +182,6 @@ def runMain():
     model = "stable_diffusion_2.1_512"
     mm.load(model)
 
-    compvis = CompVis(
-        model=mm.loaded_models[model],
-        model_name=model,
-        output_dir="output_dir",
-        disable_voodoo=True,
-        filter_nsfw=False,
-        safety_checker=None,
-    )
     if TEST:
         message_dict = {
             'seed': "20",
@@ -212,6 +204,14 @@ def runMain():
                     break
 
         ## Run stable Diffusion
+        compvis = CompVis(
+            model=mm.loaded_models[model],
+            model_name=model,
+            output_dir="output_dir",
+            disable_voodoo=True,
+            filter_nsfw=False,
+            safety_checker=None,
+        )
         print("Found a message! Running Stable Diffusion")
         message_dict = convertMessageToDict(message)
         message_dict = decideInputs(message_dict)
