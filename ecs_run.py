@@ -1,6 +1,6 @@
-from nataili.model_manager import ModelManager
-from nataili.inference.compvis.txt2img import txt2img
-from nataili.util.cache import torch_gc
+from nataili.model_manager.compvis import CompVisModelManager
+from nataili.stable_diffusion.compvis import CompVis
+from nataili.util.logger import logger
 import os
 from PIL import Image
 
@@ -10,15 +10,14 @@ import json
 import requests
 import random
 
-REGION = os.environ['REGION']
+TEST = False
+REGION = requests.get('http://169.254.169.254/latest/meta-data/placement/region').content.decode("utf-8") 
 ssm = boto3.client('ssm', region_name=REGION)
-USER_HG =  ssm.get_parameter(Name='/USER_HG')['Parameter']['Value']
-PASSWORD_HG = ssm.get_parameter(Name='/PASSWORD_HG', WithDecryption=True)['Parameter']['Value']
 
 # Create SQS client
+QUEUE_URL = ssm.get_parameter(Name='/discord_diffusion/SQS_QUEUE')['Parameter']['Value']
 SQS = boto3.client('sqs', region_name=REGION)
 
-QUEUE_URL = os.environ['SQSQUEUEURL']
 WAIT_TIME_SECONDS = 20
 
 ### SQS Functions ###
@@ -99,15 +98,19 @@ def picturesToDiscord(file_path, message_dict, message_response):
     return
 
 def messageResponse(customer_data):
-    message_response = f"\nPrompt: {customer_data['prompt']}"
-    if 'negative_prompt' in customer_data:
-        message_response += f"\nNegative Prompt: {customer_data['negative_prompt']}"
-    if 'seed' in customer_data:
-        message_response += f"\nSeed: {customer_data['seed']}"
-    if 'steps' in customer_data:
-        message_response += f"\nSteps: {customer_data['steps']}"
-    if 'sampler' in customer_data:
-        message_response += f"\nSampler: {customer_data['sampler']}"
+    # Make the customer request readable
+    message_response = ''
+    readable_dict = {
+        'prompt': 'Prompt',
+        'negative_prompt': 'Negative Prompt',
+        'seed': 'Seed',
+        'steps': 'Steps',
+        'sampler': 'Sampler'
+    }
+
+    for internal_var, readable in readable_dict.items():
+        if internal_var in customer_data:
+            message_response += f"{readable}: {customer_data[internal_var]}\n"
     return message_response
 
 def submitInitialResponse(application_id, interaction_token, message_response):
@@ -135,57 +138,59 @@ def image_grid(imgs, rows, cols):
 
     w, h = imgs[0].size
     grid = Image.new('RGB', size=(cols*w, rows*h))
-    grid_w, grid_h = grid.size
-    
+
     for i, img in enumerate(imgs):
         grid.paste(img, box=(i%cols*w, i//cols*h))
     return grid
 
-def runStableDiffusion(model_manager, model, user_inputs):
+def runStableDiffusion(compvis, user_inputs):
     # Run Stable Diffusion and create images in a grid.
     image_list = []
     for my_seed in range(int(user_inputs['seed']),int(user_inputs['seed']) + 4):
-        generator = txt2img(model_manager.loaded_models[model]["model"], model_manager.loaded_models[model]["device"], 'output_dir')
-        generator.generate(user_inputs['prompt'], sampler_name=user_inputs['sampler'], ddim_steps=int(user_inputs['steps']), save_individual_images=False, n_iter=1, batch_size=1, seed=my_seed)
-        image_list.append(generator.images[0]["image"])
-    torch_gc()
+        compvis.generate(
+            prompt=f"{user_inputs['prompt']} ### {user_inputs['negative_prompt']}",
+            sampler_name=user_inputs['sampler'],
+            ddim_steps=int(user_inputs['steps']),
+            seed=my_seed,
+            save_individual_images=False
+        )    
+    image_list = [i["image"] for i in compvis.images]
     return image_list
 
 def saveImage(image_list):
     my_grid = image_grid(image_list, 2, 2)
-    my_grid.save('tmp.png', format="Png")   
+    my_grid.save('tmp.png', format="Png")
     return 'tmp.png'
 
 def decideInputs(user_dict):
-    if 'seed' not in user_dict:
-        user_dict['seed'] = random.randint(0,99999)
+    default_dict = {
+        'seed': random.randint(0,99999),
+        'steps': 16,
+        'negative_prompt': "",
+        'sampler': "k_euler_a",
+        'model': "stable_diffusion_2.1_512"
+    }
 
-    if 'steps' not in user_dict:
-        user_dict['steps'] = 16
-
-    if 'sampler' not in user_dict:
-        user_dict['sampler'] = 'k_euler_a'
+    for internal_var, default in default_dict.items():
+        if internal_var not in user_dict:
+            user_dict[internal_var] = default
     return user_dict
 
 def runMain():
-    # The model manager loads and unloads the  SD models and has features to download them or find their location
-    model_manager = ModelManager(hf_auth={'username': USER_HG, 'password': PASSWORD_HG})
-    model_manager.init()
+    mm = CompVisModelManager()
+    # The model to use for the generation.
+    base_model = "stable_diffusion_2.1_512"
+    mm.load(base_model)
+    prev_loaded_models = []
+    prev_loaded_models.append(base_model)
 
-    # The model to use for the generation. 
-    model = "stable_diffusion"
-    success = model_manager.load_model(model)
-    # Load model or download model using hugging face credentials
-    if success:
-        print(f'{model} loaded')
-    else:
-        download_s = model_manager.download_model(model)
-        if download_s:
-            print(f'{model} downloaded')
-            model_manager.load_model(model)
-        else:
-            print(f'{model} download error')
-            print(f'{model} load error')
+    if TEST:
+        message_dict = {
+            'seed': "20",
+            'prompt': 'a chocolate cake',
+            'sampler': 'k_euler_a',
+            'steps': '25'
+        }
 
     queue_long_poll = WAIT_TIME_SECONDS
     # Get Message from Queue
@@ -207,19 +212,26 @@ def runMain():
         message_response = messageResponse(message_dict)
         print(message_response)
         submitInitialResponse(message_dict['applicationId'], message_dict['interactionToken'], message_response)
-        # file_path, user_seed, user_steps = runStableDiffusion(opt, message_dict, model, device, outpath, sampler)
-        image_list = runStableDiffusion(model_manager, model, message_dict)
+
+        # Determine if we need to load a new model
+        if message_dict['model'] not in prev_loaded_models:
+            mm.load(message_dict['model'])
+            prev_loaded_models.append(message_dict['model'])
+            
+        compvis = CompVis(
+            model=mm.loaded_models[message_dict['model']],
+            model_name=message_dict['model'],
+            output_dir="output_dir",
+            disable_voodoo=True,
+            filter_nsfw=False,
+            safety_checker=None,
+        )
+        image_list = runStableDiffusion(compvis, message_dict)
         file_path = saveImage(image_list)
         picturesToDiscord(file_path, message_dict, message_response)
         cleanupPictures(file_path)
         ## Delete Message
         deleteSQSMessage(QUEUE_URL, receipt_handle, message_dict['prompt'])
-
-    image_list = runStableDiffusion(model_manager, model)
-    my_image = saveImage(image_list)
-
-
-
 
 if __name__ == "__main__":
     runMain()
