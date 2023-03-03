@@ -24,4 +24,4 @@ COPY ecs_run.py /app/
 
 SHELL ["conda", "run", "-n", "discord-diffusion", "/bin/bash", "-c"]
 
-ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "discord-diffusion", "python", "ecs_run.py"]
+ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "discord-diffusion", "python", "-u", "ecs_run.py"]
