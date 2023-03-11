@@ -169,7 +169,7 @@ def decideInputs(user_dict):
         'steps': 16,
         'negative_prompt': "",
         'sampler': "k_euler_a",
-        'model': "stable_diffusion_2.1_512"
+        'model': "stable_diffusion_2.1"
     }
 
     for internal_var, default in default_dict.items():
@@ -180,7 +180,7 @@ def decideInputs(user_dict):
 def runMain():
     mm = CompVisModelManager()
     # The model to use for the generation.
-    base_model = "stable_diffusion_2.1_512"
+    base_model = "stable_diffusion_2.1"
     mm.load(base_model)
     prev_loaded_models = []
     prev_loaded_models.append(base_model)
