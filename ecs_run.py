@@ -95,7 +95,7 @@ def picturesToDiscord(file_path, message_dict, message_response):
     r = requests.patch(url, json=json_payload, files=files)
     validateRequest(r)
 
-    return
+    return r.ok
 
 def messageResponse(customer_data):
     # Make the customer request readable
@@ -126,7 +126,7 @@ def submitInitialResponse(application_id, interaction_token, message_response):
     r = requests.patch(url, json=json_payload, )
     validateRequest(r)
 
-    return
+    return r.ok
 
 def cleanupPictures(path_to_file):
     # Clean up file(s) created during creation.
@@ -212,27 +212,28 @@ def runMain():
         message_dict = decideInputs(message_dict)
         message_response = messageResponse(message_dict)
         print(message_response)
-        submitInitialResponse(message_dict['applicationId'], message_dict['interactionToken'], message_response)
-
-        # Determine if we need to load a new model
-        if message_dict['model'] not in prev_loaded_models:
-            mm.load(message_dict['model'])
-            prev_loaded_models.append(message_dict['model'])
-            
-        compvis = CompVis(
-            model=mm.loaded_models[message_dict['model']],
-            model_name=message_dict['model'],
-            output_dir="output_dir",
-            disable_voodoo=True,
-            filter_nsfw=False,
-            safety_checker=None,
-        )
-        image_list = runStableDiffusion(compvis, message_dict)
-        file_path = saveImage(image_list)
-        picturesToDiscord(file_path, message_dict, message_response)
-        cleanupPictures(file_path)
-        ## Delete Message
-        deleteSQSMessage(QUEUE_URL, receipt_handle, message_dict['prompt'])
+        successful_init_response = submitInitialResponse(message_dict['applicationId'], message_dict['interactionToken'], message_response)
+        if successful_init_response:
+            # Determine if we need to load a new model
+            if message_dict['model'] not in prev_loaded_models:
+                mm.load(message_dict['model'])
+                prev_loaded_models.append(message_dict['model'])
+                
+            compvis = CompVis(
+                model=mm.loaded_models[message_dict['model']],
+                model_name=message_dict['model'],
+                output_dir="output_dir",
+                disable_voodoo=True,
+                filter_nsfw=False,
+                safety_checker=None,
+            )
+            image_list = runStableDiffusion(compvis, message_dict)
+            file_path = saveImage(image_list)
+            successful_upload = picturesToDiscord(file_path, message_dict, message_response)
+            cleanupPictures(file_path)
+            ## Delete Message
+            if successful_upload:
+                deleteSQSMessage(QUEUE_URL, receipt_handle, message_dict['prompt'])
 
 if __name__ == "__main__":
     runMain()
