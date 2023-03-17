@@ -215,7 +215,7 @@ def runMain():
         successful_init_response = submitInitialResponse(message_dict['applicationId'], message_dict['interactionToken'], message_response)
         if successful_init_response:
             # Remove oldest used models to not fill up SSD space. (Models are big)
-            if len(mm.get_available_models()) >= 2:
+            if message_dict['model'] not in mm.get_available_models() and len(mm.get_available_models()) >= 2:
                 mm.unload_model(mm.get_available_models().pop(0))
             mm.load(message_dict['model'])
 
