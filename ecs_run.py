@@ -180,10 +180,10 @@ def decideInputs(user_dict):
 def runMain():
     mm = CompVisModelManager()
     # The model to use for the generation.
-    base_model = "stable_diffusion"
-    mm.load(base_model)
-    prev_loaded_models = []
-    prev_loaded_models.append(base_model)
+    # base_model = "stable_diffusion"
+    # mm.load(base_model)
+    # prev_loaded_models = []
+    # prev_loaded_models.append(base_model)
 
     if TEST:
         message_dict = {
@@ -214,11 +214,11 @@ def runMain():
         print(message_response)
         successful_init_response = submitInitialResponse(message_dict['applicationId'], message_dict['interactionToken'], message_response)
         if successful_init_response:
-            # Determine if we need to load a new model
-            if message_dict['model'] not in prev_loaded_models:
-                mm.load(message_dict['model'])
-                prev_loaded_models.append(message_dict['model'])
-                
+            # Remove oldest used models to not fill up SSD space. (Models are big)
+            if len(mm.get_available_models()) >= 2:
+                mm.unload_model(mm.get_available_models().pop(0))
+            mm.load(message_dict['model'])
+
             compvis = CompVis(
                 model=mm.loaded_models[message_dict['model']],
                 model_name=message_dict['model'],
