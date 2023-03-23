@@ -19,6 +19,7 @@ QUEUE_URL = ssm.get_parameter(Name='/discord_diffusion/SQS_QUEUE')['Parameter'][
 SQS = boto3.client('sqs', region_name=REGION)
 
 WAIT_TIME_SECONDS = 20
+os.environ["NATAILI_CACHE_HOME"] = "/mount/efs/models"
 
 ### SQS Functions ###
 def getSQSMessage(queue_url, time_wait):
