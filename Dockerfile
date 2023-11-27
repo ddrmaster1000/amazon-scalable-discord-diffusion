@@ -1,4 +1,5 @@
-FROM 763104351884.dkr.ecr.us-east-1.amazonaws.com/huggingface-pytorch-inference-neuronx:1.13.1-transformers4.34.1-neuronx-py310-sdk2.15.0-ubuntu20.04
+ARG REGION
+FROM 763104351884.dkr.ecr.$REGION.amazonaws.com/huggingface-pytorch-inference-neuronx:1.13.1-transformers4.34.1-neuronx-py310-sdk2.15.0-ubuntu20.04
 # Images: https://github.com/aws/deep-learning-containers/blob/master/available_images.md
 
 WORKDIR /app
