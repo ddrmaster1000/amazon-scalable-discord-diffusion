@@ -1,27 +1,17 @@
-FROM nvidia/cuda:12.0.0-runtime-ubuntu22.04
+FROM 763104351884.dkr.ecr.us-east-1.amazonaws.com/huggingface-pytorch-inference-neuronx:1.13.1-transformers4.34.1-neuronx-py310-sdk2.15.0-ubuntu20.04
+# Images: https://github.com/aws/deep-learning-containers/blob/master/available_images.md
+
 WORKDIR /app
+SHELL ["/bin/bash", "-c"]
 
-RUN apt-get update && apt-get install -y wget git libgl1 libglib2.0-0 libsm6 libxrender1 libxext6 && apt-get clean
+RUN python --version
+# Upgrade neuron to version >=v0.0.15 for LCM support and Data parallelism https://github.com/huggingface/optimum-neuron/releases/tag/v0.0.15
+RUN python -m pip install optimum-neuron diffusers --upgrade --user
 
-# Download and install Miniconda
-RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-RUN bash Miniconda3-latest-Linux-x86_64.sh -b -p /miniconda
+COPY ecs-run-inf2.py /app
+ENTRYPOINT ["python", "ecs-run-inf2.py"]
 
-# Add miniconda to the PATH
-ENV PATH=/miniconda/bin:$PATH
 
-COPY environment.yaml /app/
-
-# Update conda and install any necessary packages
-RUN conda update --name base --channel defaults conda && \
-    conda env create -f /app/environment.yaml --force -q && \
-    conda clean -a -y
-
-# Install conda environment into container so we do not need to install every time.
-ENV ENV_NAME discord-diffusion
-
-COPY ecs_run.py /app/
-
-SHELL ["conda", "run", "-n", "discord-diffusion", "/bin/bash", "-c"]
-
-ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "discord-diffusion", "python", "-u", "ecs_run.py"]
+# docker build -f DockerfileHug .
+# RUN python3 /sd/sdxl_generate.py
+# docker container run --device=/dev/neuron0 -it c988e82fb474 /bin/bash

@@ -1,17 +1,10 @@
 name: discord-diffusion
 channels:
-  - nvidia
-  - conda-forge
   - defaults
 dependencies:
-  - cudatoolkit==11.7.0
   - git
   - pip
   - python==3.10
   - pip:
-    # - nataili == 0.2.9009
-    - git+https://github.com/ddrmaster1000/nataili.git
-    - xformers
-    - triton
     - boto3
     - requests
